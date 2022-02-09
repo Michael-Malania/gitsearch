@@ -114,29 +114,37 @@ def sort_data(sort, final_data):
 
 def format_items(columns_to_display, final_data, api_response, ignore_name, k, list_of_keys):
     repo_data = []
+    ignore_name = ignore_name.split(',')
     for key in list_of_keys:
-        if key in columns_to_display and key not in ignore_name:
-            resp_data = str(api_response['items'][k][key])
-            if key == 'license':
-                if resp_data != 'None': # none is in string because of iteration requirement below
-                    resp_data = str(api_response['items'][k][key]['name'])#[:resp_data.find(' ')]
-                    repo_data.append(resp_data)
-                else:
-                    repo_data.append('None')
-            elif key == 'updated_at':
-                date_now = datetime.now()
-                data_at_last_update = datetime.strptime(resp_data, '%Y-%m-%dT%H:%M:%SZ')
-                date_diff_in_days=diff_month(date_now, data_at_last_update)
-                if date_diff_in_days <= ONE_MONTH:
-                    resp_data = str(date_diff_in_days)+' days ago'
-                elif date_diff_in_days <= ONE_YEAR:
-                    resp_data = str(date_diff_in_days//ONE_MONTH)+' months ago'
-                else:
-                    resp_data = str(date_diff_in_days//ONE_YEAR)+' years ago'
+        if (
+            api_response['items'][k]['name'] in ignore_name
+            or key not in columns_to_display
+        ):
+            continue
+
+        resp_data = str(api_response['items'][k][key])
+        if key == 'license':
+            if resp_data != 'None': # none is in string because of iteration requirement below
+                resp_data = str(api_response['items'][k][key]['name'])
                 repo_data.append(resp_data)
             else:
-                repo_data.append(resp_data)
-    final_data.append(repo_data)
+                repo_data.append('None')
+        elif key == 'updated_at':
+            date_now = datetime.now()
+            data_at_last_update = datetime.strptime(resp_data, '%Y-%m-%dT%H:%M:%SZ')
+            date_diff_in_days=diff_month(date_now, data_at_last_update)
+            if date_diff_in_days <= ONE_MONTH:
+                resp_data = str(date_diff_in_days)+' days ago'
+            elif date_diff_in_days <= ONE_YEAR:
+                resp_data = str(date_diff_in_days//ONE_MONTH)+' months ago'
+            else:
+                resp_data = str(date_diff_in_days//ONE_YEAR)+' years ago'
+            repo_data.append(resp_data)
+        else:
+            repo_data.append(resp_data)
+
+    if repo_data != []:
+        final_data.append(repo_data)
 
 def extract_items(ignore, query, per_page, i):
     url = 'https://api.github.com/search/repositories?q={query}&per_page={per_page}&page={page}'.format(query=query, per_page=per_page, page=i+1)
